@@ -1,23 +1,22 @@
-# For more details on the format and content:
-# https://github.com/robocorp/rcc/blob/master/docs/recipes.md#what-is-in-robotyaml
+# robot.yaml
+
+robot:
+  name: News Scraper Robot
+  type: robocorp
+
+variables:
+  # You can define default variables here if needed
+  search_phrase: ""
+  news_category: ""
+  num_months: 0
 
 tasks:
-  Run Minimal Task:
-    shell: python -m robocorp.tasks run tasks.minimal_task
-
-
-
-environmentConfigs:
-  - environment_windows_amd64_freeze.yaml
-  - environment_linux_amd64_freeze.yaml
-  - environment_darwin_amd64_freeze.yaml
-  - conda.yaml
-
-artifactsDir: output
-
-PATH:
-  - .
-PYTHONPATH:
-  - .
-ignoreFiles:
-  - .gitignore
+  - name: Run News Scraper
+    script: task.py
+    workitem:
+      type: json
+      # You can define a default work item structure here if desired
+      payload:
+        search_phrase: ""
+        news_category: ""
+        num_months: 0
