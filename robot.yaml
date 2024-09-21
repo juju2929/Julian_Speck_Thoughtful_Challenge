@@ -1,22 +1,27 @@
-# robot.yaml
-
-robot:
-  name: News Scraper Robot
-  type: robocorp
-
-variables:
-  # You can define default variables here if needed
-  search_phrase: ""
-  news_category: ""
-  num_months: 0
+# For more details on the format and content:
+# https://github.com/robocorp/rcc/blob/master/docs/recipes.md#what-is-in-robotyaml
 
 tasks:
-  - name: Run News Scraper
-    script: task.py
-    workitem:
-      type: json
-      # You can define a default work item structure here if desired
-      payload:
-        search_phrase: ""
-        news_category: ""
-        num_months: 0
+  Run Task:
+    shell: python -m robocorp.tasks run tasks.py
+
+environmentConfigs:
+  - environment_windows_amd64_freeze.yaml
+  - environment_linux_amd64_freeze.yaml
+  - environment_darwin_amd64_freeze.yaml
+  - conda.yaml
+
+artifactsDir: output
+output:
+  clean: true
+
+PATH:
+  - .
+PYTHONPATH:
+  - .
+ignoreFiles:
+  - .gitignore
+
+variables:
+  RC_WORKITEM_INPUT_PATH: C:/Users/JSpeck/Julian_Speck_Thoughtful_Challenge/output/work-items-in/workitems.json
+
