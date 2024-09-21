@@ -1,0 +1,11 @@
+name: julian_thoughtful_challenge
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10              # Updated to Python 3.10
+  - pip=23.2.1
+  - robocorp-truststore=0.8.0   # Truststore version requires Python >= 3.10
+  - pip:
+    - rpaframework==28.6.3
+    - robocorp==2.1.0
+    - robocorp-browser==2.3.3
