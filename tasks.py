@@ -12,12 +12,12 @@ def run_task():
     payload = item.payload if item and item.payload else {}
 
     # Extract variables with fallback defaults
-    search_phrase = payload.get("search_phrase", "default phrase")
-    news_category = payload.get("news_category", "general")
-    num_months = payload.get("num_months", 3)
+    search_phrase = payload.get("search_phrase", "animals")
+    sort_category = payload.get("sort_category", "date")
+    num_months = payload.get("num_months", 12)
 
     # Initialize and run the scraper
-    scraper = NewsBot(search_phrase, news_category, num_months)
+    scraper = NewsBot(search_phrase, sort_category, num_months)
     scraper.run()
 
 if __name__ == "__main__":
