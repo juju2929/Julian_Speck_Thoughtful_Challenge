@@ -1,6 +1,5 @@
 from robocorp import workitems
 from news_scraper import NewsBot
-
 from robocorp.tasks import task
 
 @task

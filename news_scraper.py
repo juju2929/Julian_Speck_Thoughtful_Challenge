@@ -71,30 +71,34 @@ class DataProcessor:
         money_pattern = r'\$\d+(\.\d{2})?|\d+\s?(dollars?|usd)'
         return bool(re.search(money_pattern, text, re.IGNORECASE))
 
-    def set_date_range(self, num_months):
-        if num_months < 0:
-            raise ValueError("Number of months cannot be negative.")
-        
-        # Adjust the start date based on the user input
-        # 0 or 1 means only the current month
-        if num_months == 0:
-            self.start_date = datetime.now().replace(day=1)  # Start of current month
-        else:
-            self.start_date = (datetime.now().replace(day=1) - relativedelta(months=num_months - 1))
-
-        self.end_date = datetime.now()  # Current date
-        self.logger.info(f"Date range set from {self.start_date} to {self.end_date}.")
-
-    # Ensure your data processor or wherever you're checking date ranges can handle the adjusted dates
+    staticmethod
     def is_within_date_range(self, article_date_str):
+        # Ensure article_date_str is a string
+        if not isinstance(article_date_str, str):
+            article_date_str = str(article_date_str)
+
+        # Your existing date parsing logic here
+        parsed_date = DataProcessor.parse_date(article_date_str)
+
+        # Now use self.start_date and self.end_date to check if the parsed date is within range
+        return parsed_date and (self.start_date <= parsed_date <= self.end_date)
+
+
+    @staticmethod
+    def is_within_date_range(article_date_str, start_date, end_date):
         # Your existing date parsing logic here
         parsed_date = DataProcessor.parse_date(article_date_str)
         
-        # Now use self.start_date and self.end_date to check if the parsed date is within range
-        return self.start_date <= parsed_date <= self.end_date
+        if parsed_date is None:
+            return False  # If date parsing fails, return False
+            
+        return start_date <= parsed_date <= end_date
         
     @staticmethod
     def parse_date(date_str):
+        if not isinstance(date_str, str):
+            return None  # If it's not a string, return None
+
         try:
             # Try parsing as "Month Day, Year" format
             return datetime.strptime(date_str, "%B %d, %Y")
@@ -281,27 +285,27 @@ class NewsBot:
         )
         all_articles = []
         within_date_range = True
+        
+        # Calculate the date range
+        end_date = datetime.now()
+        start_date = end_date - relativedelta(months=self.num_months)
 
-        # Loop until no more "Show more" or all articles within the date range are collected
         while within_date_range:
-
             articles = self.selenium.selenium_lib.driver.find_elements(By.CSS_SELECTOR, ".search-result__list article.gc")
             if not articles:
                 self.logger.warning("No articles found. Check the CSS selector or page load.")
                 break
             
-            for article in articles[len(all_articles):]:  # Only process new articles
+            for article in articles[len(all_articles):]:
                 try:
-                    # Find and check the article's date
                     date_element = article.find_element(By.CSS_SELECTOR, ".gc__date .gc__date__date span[aria-hidden='true']")
                     date_str = date_element.text if date_element else "Date not found"
                     parsed_date = DataProcessor.parse_date(date_str)
-                    
-                    # Check if the article is within the required time window
-                    if parsed_date and self.data_processor.is_within_date_range(parsed_date.strftime("%B %d, %Y"), self.num_months):
+
+                    if parsed_date and self.data_processor.is_within_date_range(str(parsed_date.strftime("%B %d, %Y")), start_date, end_date):
                         all_articles.append(article)
                     else:
-                        within_date_range = False  # Stop loading if we encounter an article outside the date range
+                        within_date_range = False
                         self.logger.info(f"Article date {date_str} is outside the desired date range.")
                         break
                     
@@ -309,45 +313,29 @@ class NewsBot:
                     self.logger.error(f"Error processing article date: {e}")
                     continue
 
-            # If we are still within the date range, click "Show more" to load additional articles
             if within_date_range:
                 try:
-                    # Wait for any overlay to disappear
-                    # WebDriverWait(self.selenium.selenium_lib.driver, 10).until(
-                    #     EC.invisibility_of_element_located((By.CSS_SELECTOR, "form.search-bar__form"))  # Adjust this selector
-                    # )
-                    
                     show_more_button = WebDriverWait(self.selenium.selenium_lib.driver, 10).until(
                         EC.element_to_be_clickable((By.XPATH, "//span[@aria-hidden='true' and text()='Show more']"))
                     )
-                    
-                    # Scroll to the button
+
                     self.selenium.selenium_lib.driver.execute_script("arguments[0].scrollIntoView(true); window.scrollBy(0, -200);", show_more_button)
 
-
-                    show_more_button = WebDriverWait(self.selenium.selenium_lib.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, "//span[@aria-hidden='true' and text()='Show more']"))
-                    )
-                    
-                    # Check if the button is visible and clickable
                     if show_more_button.is_displayed() and show_more_button.is_enabled():
-                        show_more_button.click()  # Click the button
+                        show_more_button.click()
                         self.logger.info("Clicking 'Show more' to load more articles.")
-                    else:
-                        self.logger.warning("Show more button is not clickable.")
-
-                    # Wait for new articles to load before continuing
+                    
                     WebDriverWait(self.selenium.selenium_lib.driver, 15).until(
                         EC.presence_of_all_elements_located((By.CSS_SELECTOR, "article.gc.u-clickable-card"))
                     )
                 except TimeoutException:
                     self.logger.info("No 'Show more' button found or no more articles to load.")
-                    within_date_range = False  # Stop the loop if there's no more "Show more"
-            else:
-                break
+                    within_date_range = False
 
-        self.logger.info(f"Collected {len(all_articles)} articles within the date range.")
+        self.logger.info(f"Collected {len(all_articles)} articles.")
         return all_articles
+
+
 
     def download_image(self, article):
         try:
