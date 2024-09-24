@@ -1,3 +1,0 @@
-rpaframework==28.5.1
-robocorp==2.0.1
-robocorp-browser==2.3.3
