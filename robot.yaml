@@ -22,6 +22,6 @@ PYTHONPATH:
 ignoreFiles:
   - .gitignore
 
-variables:
-  RC_WORKITEM_INPUT_PATH: C:/Users/JSpeck/Julian_Speck_Thoughtful_Challenge/output/work-items-in/workitems.json
+# variables:
+  # RC_WORKITEM_INPUT_PATH: C:/Users/JSpeck/Julian_Speck_Thoughtful_Challenge/output/work-items-in/workitems.json
 
