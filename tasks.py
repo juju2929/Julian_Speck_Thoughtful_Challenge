@@ -18,9 +18,9 @@ def run_task():
     workitems.get_input_work_item()
 
     try:
-        search_phrase = workitems.get_work_item_variable("search_phrase", default_value="animals")
-        sort_category = workitems.get_work_item_variable("sort_category", default_value="date")
-        num_months = workitems.get_work_item_variable("num_months", default_value=0)
+        search_phrase = workitems.get_work_item_variable("search_phrase")
+        sort_category = workitems.get_work_item_variable("sort_category")
+        num_months = workitems.get_work_item_variable("num_months")
 
     except KeyError as e:
         logging.error(f"Missing variable: {e}")
