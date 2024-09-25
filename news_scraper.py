@@ -139,15 +139,15 @@ class ExcelHandler:
         self.workbook.save(os.path.join(self.output_dir, self.filename))
 
 class NewsBot:
-    def __init__(self):
+    def __init__(self, search_phrase="USA", sort_category="date", num_months=3):
         self.work_items = WorkItems()
         self.selenium = CustomSelenium()
         self.data_processor = DataProcessor()
         self.excel_handler = ExcelHandler("output", "news_data.xlsx")
         self.logger = logging.getLogger(__name__)
-        self.search_phrase = None
-        self.sort_category = None
-        self.num_months = None
+        self.search_phrase = search_phrase
+        self.sort_category = sort_category
+        self.num_months = num_months
 
 
     def save_to_work_item(self):
