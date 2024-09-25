@@ -15,12 +15,14 @@ workitems = WorkItems()
 @task
 def run_task():
     # Automatically load the first input work item
-    workitems.get_input_work_item()
+
+    item = workitems.inputs.current
+    print("Received payload:", item.payload)
 
     try:
-        search_phrase = workitems.get_work_item_variable("search_phrase")
-        sort_category = workitems.get_work_item_variable("sort_category")
-        num_months = workitems.get_work_item_variable("num_months")
+        search_phrase = item.get_work_item_variable("search_phrase")
+        sort_category = item.get_work_item_variable("sort_category")
+        num_months = item.get_work_item_variable("num_months")
 
     except KeyError as e:
         logging.error(f"Missing variable: {e}")
