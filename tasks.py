@@ -17,6 +17,7 @@ def run_task():
     # Automatically load the first input work item
 
     item = workitems.inputs.current
+    print("Received item:", item)
     print("Received payload:", item.payload)
 
     try:
