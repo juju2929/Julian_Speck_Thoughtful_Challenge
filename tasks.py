@@ -2,56 +2,39 @@ from robocorp import workitems
 from news_scraper import NewsBot
 from robocorp.tasks import task
 import logging
-import json
-import os
-import glob
-
-import logging
 
 @task
 def run_task():
+    # Configure logging
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
     # Automatically load the first input work item
-
     item = workitems.inputs.current
-    """
-    Runs the news scraper task.
-
-    Automatically loads the first input work item and retrieves the following variables from it:
-        - search_phrase: The search phrase to search for on the news site.
-        - sort_category: The category to sort the results by.
-        - num_months: The number of months to search for.
-
-    Logs the received variables and runs the news scraper with the provided variables.
-
-    Stores the scraped data in an output work item variable named "scraped_data" and saves the output work item.
-
-    :raises KeyError: If any of the required variables are missing from the input work item.
-    """
-    print("Received item:", item)
-    print("Received payload:", item.payload)
 
     try:
-        search_phrase = item.payload.get("search_phrase")
-        sort_category = item.payload.get("sort_category")
-        num_months = item.payload.get("num_months")
+        # Extract parameters from the work item
+        search_phrase = item.payload["search_phrase"]
+        sort_category = item.payload["sort_category"]
+        num_months = int(item.payload["num_months"])
+
+        # Log the received variables
+        logging.info(f"Search Phrase: {search_phrase}, Sort Category: {sort_category}, Number of Months: {num_months}")
+
+        # Initialize and run the NewsBot
+        scraper = NewsBot()
+        scraper.search_phrase = search_phrase
+        scraper.sort_category = sort_category
+        scraper.num_months = num_months
+        scraper.run()
+
+        # The results are saved within the NewsBot's run method, so we don't need to handle it here
 
     except KeyError as e:
-        logging.error(f"Missing variable: {e}")
-        return
-
-    # Log the received variables
-    logging.info(f"Search Phrase: {search_phrase}, Sort Category: {sort_category}, Number of Months: {num_months}")
-
-    # Here, you can implement the logic for your NewsBot or any other processing
-    scraper = NewsBot(search_phrase, sort_category, num_months)
-    scraped_data = scraper.run()
-
-    # Create an output work item to store the results
-    workitems.create_output_work_item()
-    workitems.set_work_item_variable("scraped_data", scraped_data)
-
-    # Save the output work item
-    workitems.save_work_item()
+        logging.error(f"Missing required variable in work item: {e}")
+    except ValueError as e:
+        logging.error(f"Invalid value in work item: {e}")
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
     run_task()

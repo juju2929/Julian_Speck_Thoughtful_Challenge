@@ -176,7 +176,6 @@ class NewsBot:
 
     def run(self):
         try:
-            self.setup_work_item
             self.setup()
             self.open_news_site()
             self.handle_popup_ad()
@@ -191,20 +190,7 @@ class NewsBot:
             self.cleanup()
 
     def setup(self):
-        """Setup the input work item data, selenium webdriver and excel handler"""
-        self.work_items.get_input_work_item()
-
-        # Fetch the input parameters from the work item
-        self.search_phrase = self.work_items.get("search_phrase", "animals")
-        self.sort_category = self.work_items.get("sort_category", "date")
-        self.num_months = int(self.work_items.get("num_months", 1))  # Default to 1 month if not provided
-
-        self.logger.info(f"Input Data - Search Phrase: {self.search_phrase}, "
-                         f"Sort Category: {self.sort_category}, "
-                         f"Months: {self.num_months}")
-        
         self.selenium.set_webdriver()
-
         self.excel_handler.setup_worksheet()
 
     def open_news_site(self):
