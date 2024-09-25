@@ -162,15 +162,16 @@ class NewsBot:
         try:
             # Save the Excel file to work item output
             excel_file_path = os.path.join(self.excel_handler.output_dir, self.excel_handler.filename)
-            self.work_items.create_output_work_item()
-            self.work_items.add_file(excel_file_path)  # Attach Excel file to the output work item
+            output_work_item = self.work_items.create_output_work_item(save=False)
+
+            output_work_item.add_file(excel_file_path)  # Attach Excel file to the output work item
 
             # Save the images to the work item output (assuming images are downloaded in the output directory)
             for image_file in os.listdir("output/images"):
                 image_file_path = os.path.join("output/images", image_file)
-                self.work_items.add_file(image_file_path)  # Attach each image file to the output work item
+                output_work_item.add_file(image_file_path)  # Attach each image file to the output work item
 
-            self.work_items.save()
+            output_work_item.save()
             self.logger.info("Output work item saved successfully.")
         except Exception as e:
             self.logger.error(f"Failed to save to work item: {e}")
