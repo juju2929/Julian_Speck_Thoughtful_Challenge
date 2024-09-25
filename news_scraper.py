@@ -370,25 +370,31 @@ class NewsBot:
 
     def download_image(self, article):
         try:
-            image_url = article.find_element(By.CSS_SELECTOR, "img.some-image-class").get_attribute("src")
-            image_filename = DataProcessor.sanitize_filename(image_url)
-            image_path = os.path.join("output/images", image_filename)
+            # Locate the image URL from the article (update the CSS selector as needed)
+            image_element = article.find_element(By.CSS_SELECTOR, ".gc__image img")
+            image_url = image_element.get_attribute("src")
 
-            if not os.path.exists("output/images"):
-                os.makedirs("output/images")
+            # Create the output/images directory if it doesn't exist
+            image_dir = os.path.join("output", "images")
+            os.makedirs(image_dir, exist_ok=True)
+
+            # Download the image
+            image_filename = DataProcessor.sanitize_filename(image_url)
+            image_filepath = os.path.join(image_dir, image_filename)
 
             response = requests.get(image_url)
             if response.status_code == 200:
-                with open(image_path, 'wb') as f:
-                    f.write(response.content)
-                self.logger.info(f"Image downloaded: {image_filename}")
-                return image_filename
+                with open(image_filepath, 'wb') as image_file:
+                    image_file.write(response.content)
+                self.logger.info(f"Downloaded image to {image_filepath}")
+                return image_filename  # Return just the filename
             else:
-                self.logger.warning(f"Failed to download image: {image_url}")
+                self.logger.warning(f"Failed to download image: {image_url} (status code {response.status_code})")
                 return None
         except Exception as e:
             self.logger.error(f"Error downloading image: {e}")
             return None
+
 
 
 
@@ -400,7 +406,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     
     # These parameters should be obtained from Robocloud work item in a real scenario
-    search_phrase = "climate change"
+    search_phrase = "climate"
     sort_category = "environment"
     num_months = 2
 
