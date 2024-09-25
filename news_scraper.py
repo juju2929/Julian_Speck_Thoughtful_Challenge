@@ -73,7 +73,7 @@ class DataProcessor:
         money_pattern = r'\$\d+(\.\d{2})?|\d+\s?(dollars?|usd)'
         return bool(re.search(money_pattern, text, re.IGNORECASE))
 
-    staticmethod
+    @staticmethod
     def is_within_date_range(self, article_date_str):
         # Ensure article_date_str is a string
         if not isinstance(article_date_str, str):
