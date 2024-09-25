@@ -139,7 +139,7 @@ class ExcelHandler:
         self.workbook.save(os.path.join(self.output_dir, self.filename))
 
 class NewsBot:
-    def __init__(self, search_phrase="USA", sort_category="date", num_months=3):
+    def __init__(self, search_phrase="USA", sort_category="date", num_months=1):
         self.work_items = WorkItems()
         self.selenium = CustomSelenium()
         self.data_processor = DataProcessor()
@@ -148,20 +148,32 @@ class NewsBot:
         self.search_phrase = search_phrase
         self.sort_category = sort_category
         self.num_months = num_months
+        self.get_input_work_item()
 
+    def get_input_work_item(self):
+        # Try to load the input work item
+        try:
+            self.work_items.get_input_work_item()
+            self.logger.info("Input work item retrieved successfully.")
+        except Exception as e:
+            self.logger.error(f"Failed to retrieve input work item: {e}")
 
     def save_to_work_item(self):
-        # Save the Excel file to work item output
-        excel_file_path = os.path.join(self.excel_handler.output_dir, self.excel_handler.filename)
-        self.work_items.create_output_work_item()
-        self.work_items.add_file(excel_file_path)  # Attach Excel file to the output work item
+        try:
+            # Save the Excel file to work item output
+            excel_file_path = os.path.join(self.excel_handler.output_dir, self.excel_handler.filename)
+            self.work_items.create_output_work_item()
+            self.work_items.add_file(excel_file_path)  # Attach Excel file to the output work item
 
-        # Save the images to the work item output (assuming images are downloaded in the output directory)
-        for image_file in os.listdir("output/images"):
-            image_file_path = os.path.join("output/images", image_file)
-            self.work_items.add_file(image_file_path)  # Attach each image file to the output work item
+            # Save the images to the work item output (assuming images are downloaded in the output directory)
+            for image_file in os.listdir("output/images"):
+                image_file_path = os.path.join("output/images", image_file)
+                self.work_items.add_file(image_file_path)  # Attach each image file to the output work item
 
-        self.work_items.save()
+            self.work_items.save()
+            self.logger.info("Output work item saved successfully.")
+        except Exception as e:
+            self.logger.error(f"Failed to save to work item: {e}")
 
     def handle_popup_ad(self):
         # Attempt to find and close the popup ad
