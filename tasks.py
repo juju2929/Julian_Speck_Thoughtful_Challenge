@@ -7,16 +7,26 @@ import os
 import glob
 
 import logging
-from RPA.Robocorp.WorkItems import WorkItems
-
-# Initialize the WorkItems library
-workitems = WorkItems()
 
 @task
 def run_task():
     # Automatically load the first input work item
 
     item = workitems.inputs.current
+    """
+    Runs the news scraper task.
+
+    Automatically loads the first input work item and retrieves the following variables from it:
+        - search_phrase: The search phrase to search for on the news site.
+        - sort_category: The category to sort the results by.
+        - num_months: The number of months to search for.
+
+    Logs the received variables and runs the news scraper with the provided variables.
+
+    Stores the scraped data in an output work item variable named "scraped_data" and saves the output work item.
+
+    :raises KeyError: If any of the required variables are missing from the input work item.
+    """
     print("Received item:", item)
     print("Received payload:", item.payload)
 
