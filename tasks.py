@@ -31,9 +31,9 @@ def run_task():
     print("Received payload:", item.payload)
 
     try:
-        search_phrase = item.get_work_item_variable("search_phrase")
-        sort_category = item.get_work_item_variable("sort_category")
-        num_months = item.get_work_item_variable("num_months")
+        search_phrase = item.payload.get("search_phrase")
+        sort_category = item.payload.get("sort_category")
+        num_months = item.payload.get("num_months")
 
     except KeyError as e:
         logging.error(f"Missing variable: {e}")
