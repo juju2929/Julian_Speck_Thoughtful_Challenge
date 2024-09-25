@@ -1,17 +1,19 @@
 import logging
 import os
+import requests
+import openpyxl
+import requests
+import re
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from RPA.Robocorp.WorkItems import WorkItems
+from RPA.Browser.Selenium import Selenium
 from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
-from RPA.Browser.Selenium import Selenium
-import requests
-import openpyxl
-import requests
-import re
+
 
 log_dir = "logs"
 os.makedirs(log_dir, exist_ok=True)
@@ -137,14 +139,29 @@ class ExcelHandler:
         self.workbook.save(os.path.join(self.output_dir, self.filename))
 
 class NewsBot:
-    def __init__(self, search_phrase, sort_category, num_months):
-        self.search_phrase = search_phrase
-        self.sort_category = sort_category
-        self.num_months = num_months
+    def __init__(self):
+        self.work_items = WorkItems()
         self.selenium = CustomSelenium()
         self.data_processor = DataProcessor()
         self.excel_handler = ExcelHandler("output", "news_data.xlsx")
         self.logger = logging.getLogger(__name__)
+        self.search_phrase = None
+        self.sort_category = None
+        self.num_months = None
+
+
+    def save_to_work_item(self):
+        # Save the Excel file to work item output
+        excel_file_path = os.path.join(self.excel_handler.output_dir, self.excel_handler.filename)
+        self.work_items.create_output_work_item()
+        self.work_items.add_file(excel_file_path)  # Attach Excel file to the output work item
+
+        # Save the images to the work item output (assuming images are downloaded in the output directory)
+        for image_file in os.listdir("output/images"):
+            image_file_path = os.path.join("output/images", image_file)
+            self.work_items.add_file(image_file_path)  # Attach each image file to the output work item
+
+        self.work_items.save()
 
     def handle_popup_ad(self):
         # Attempt to find and close the popup ad
@@ -159,6 +176,7 @@ class NewsBot:
 
     def run(self):
         try:
+            self.setup_work_item
             self.setup()
             self.open_news_site()
             self.handle_popup_ad()
@@ -166,13 +184,27 @@ class NewsBot:
             self.handle_popup_ad()
             self.select_sort_option()
             self.run_scraping_process()
+            self.save_to_work_item()
         except Exception as e:
             self.logger.error(f"An error occurred during execution: {e}")
         finally:
             self.cleanup()
 
     def setup(self):
+        """Setup the input work item data, selenium webdriver and excel handler"""
+        self.work_items.get_input_work_item()
+
+        # Fetch the input parameters from the work item
+        self.search_phrase = self.work_items.get("search_phrase", "animals")
+        self.sort_category = self.work_items.get("sort_category", "date")
+        self.num_months = int(self.work_items.get("num_months", 1))  # Default to 1 month if not provided
+
+        self.logger.info(f"Input Data - Search Phrase: {self.search_phrase}, "
+                         f"Sort Category: {self.sort_category}, "
+                         f"Months: {self.num_months}")
+        
         self.selenium.set_webdriver()
+
         self.excel_handler.setup_worksheet()
 
     def open_news_site(self):
@@ -339,25 +371,26 @@ class NewsBot:
 
     def download_image(self, article):
         try:
-            img_element = article.find_element(By.CSS_SELECTOR, "img.article-card__image.gc__image")
-            img_url = img_element.get_attribute("src")
+            image_url = article.find_element(By.CSS_SELECTOR, "img.some-image-class").get_attribute("src")
+            image_filename = DataProcessor.sanitize_filename(image_url)
+            image_path = os.path.join("output/images", image_filename)
 
-             # Sanitize the filename
-            filename = DataProcessor.sanitize_filename(img_url)
-            if not filename.lower().endswith('.jpeg'):
-                filename += '.jpeg'
-            img_path = os.path.join("output", filename)
-            
-            # Download the image if it doesn't already exist
-            if not os.path.exists(img_path):
-                response = requests.get(img_url)
-                with open(img_path, 'wb') as f:
+            if not os.path.exists("output/images"):
+                os.makedirs("output/images")
+
+            response = requests.get(image_url)
+            if response.status_code == 200:
+                with open(image_path, 'wb') as f:
                     f.write(response.content)
-            
-            return filename
+                self.logger.info(f"Image downloaded: {image_filename}")
+                return image_filename
+            else:
+                self.logger.warning(f"Failed to download image: {image_url}")
+                return None
         except Exception as e:
             self.logger.error(f"Error downloading image: {e}")
-            return ""
+            return None
+
 
 
     def cleanup(self):
