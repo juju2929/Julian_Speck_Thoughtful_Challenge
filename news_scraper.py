@@ -167,8 +167,8 @@ class NewsBot:
             output_work_item.add_file(excel_file_path)  # Attach Excel file to the output work item
 
             # Save the images to the work item output (assuming images are downloaded in the output directory)
-            for image_file in os.listdir("output/images"):
-                image_file_path = os.path.join("output/images", image_file)
+            for image_file in os.listdir("images"):
+                image_file_path = os.path.join("images", image_file)
                 output_work_item.add_file(image_file_path)  # Attach each image file to the output work item
 
             output_work_item.save()
@@ -273,7 +273,7 @@ class NewsBot:
                 date_str = date_element.text if date_element else "Date not found"
 
                 description = article.find_element(By.CSS_SELECTOR, ".gc__body-wrap .gc__excerpt p").text
-                picture_filename = self.download_image(article)
+                picture_filename = self.download_image(article,i)
                 search_count = self.data_processor.count_search_phrase([title, description], self.search_phrase)
                 contains_money = self.data_processor.check_contains_money(description)
 
@@ -293,7 +293,7 @@ class NewsBot:
                     date_element = updated_article.find_element(By.CSS_SELECTOR, ".gc__date .gc__date__date span[aria-hidden='true']")
                     date_str = date_element.text if date_element else "Date not found"
                     description = updated_article.find_element(By.CSS_SELECTOR, ".gc__body-wrap .gc__excerpt p").text
-                    picture_filename = self.download_image(updated_article)
+                    picture_filename = self.download_image(updated_article,i)
                     search_count = self.data_processor.count_search_phrase([title, description], self.search_phrase)
                     contains_money = self.data_processor.check_contains_money(description)
 
@@ -316,30 +316,38 @@ class NewsBot:
         )
         all_articles = []
         within_date_range = True
-        
+
         # Calculate the date range
         end_date = datetime.now()
-        start_date = end_date - relativedelta(months=self.num_months)
+
+        # If num_months is 0, start from the first day of the current month
+        if self.num_months == 0:
+            start_date = end_date.replace(day=1)  # First day of the current month
+        else:
+            start_date = end_date - relativedelta(months=self.num_months)
 
         while within_date_range:
             articles = self.selenium.selenium_lib.driver.find_elements(By.CSS_SELECTOR, ".search-result__list article.gc")
             if not articles:
                 self.logger.warning("No articles found. Check the CSS selector or page load.")
                 break
-            
+
             for article in articles[len(all_articles):]:
                 try:
                     date_element = article.find_element(By.CSS_SELECTOR, ".gc__date .gc__date__date span[aria-hidden='true']")
                     date_str = date_element.text if date_element else "Date not found"
                     parsed_date = DataProcessor.parse_date(date_str)
 
-                    if parsed_date and self.data_processor.is_within_date_range(str(parsed_date.strftime("%B %d, %Y")), start_date, end_date):
+                    # Check if parsed date is within the range
+                    if parsed_date and self.data_processor.is_within_date_range(
+                        str(parsed_date.strftime("%B %d, %Y")), start_date, end_date
+                    ):
                         all_articles.append(article)
                     else:
                         within_date_range = False
                         self.logger.info(f"Article date {date_str} is outside the desired date range.")
                         break
-                    
+
                 except Exception as e:
                     self.logger.error(f"Error processing article date: {e}")
                     continue
@@ -350,7 +358,9 @@ class NewsBot:
                         EC.element_to_be_clickable((By.XPATH, "//span[@aria-hidden='true' and text()='Show more']"))
                     )
 
-                    self.selenium.selenium_lib.driver.execute_script("arguments[0].scrollIntoView(true); window.scrollBy(0, -200);", show_more_button)
+                    self.selenium.selenium_lib.driver.execute_script(
+                        "arguments[0].scrollIntoView(true); window.scrollBy(0, -200);", show_more_button
+                    )
 
                     if show_more_button.is_displayed() and show_more_button.is_enabled():
                         show_more_button.click()
@@ -368,35 +378,46 @@ class NewsBot:
 
 
 
-    def download_image(self, article):
+
+    def download_image(self, article, index):
         try:
-            # Locate the image URL from the article (update the CSS selector as needed)
-            image_element = article.find_element(By.CSS_SELECTOR, ".gc__image img")
+            # Wait for the image to appear in the article
+            WebDriverWait(self.selenium.selenium_lib.driver, 2).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".gc__image"))
+            )
+
+            # Extract the image URL from the updated img element
+            image_element = article.find_element(By.CSS_SELECTOR, ".gc__image")
             image_url = image_element.get_attribute("src")
 
-            # Create the output/images directory if it doesn't exist
-            image_dir = os.path.join("output", "images")
-            os.makedirs(image_dir, exist_ok=True)
+            if image_url:
+                # Create a unique filename for each image
+                image_filename = f"article_image_{index}.jpg"
+                image_path = os.path.join("images", image_filename)  # Assuming you have an 'images' folder
 
-            # Download the image
-            image_filename = DataProcessor.sanitize_filename(image_url)
-            image_filepath = os.path.join(image_dir, image_filename)
+                # Ensure the 'images' directory exists
+                os.makedirs("images", exist_ok=True)
 
-            response = requests.get(image_url)
-            if response.status_code == 200:
-                with open(image_filepath, 'wb') as image_file:
-                    image_file.write(response.content)
-                self.logger.info(f"Downloaded image to {image_filepath}")
-                return image_filename  # Return just the filename
+                # Download the image and save it locally
+                response = requests.get(image_url, stream=True)
+                if response.status_code == 200:
+                    with open(image_path, 'wb') as file:
+                        for chunk in response.iter_content(1024):
+                            file.write(chunk)
+                    
+                    self.logger.info(f"Image downloaded and saved as {image_filename}.")
+                    return image_filename  # Return the filename for further use
+
+                else:
+                    self.logger.warning(f"Failed to download image from {image_url}. Status code: {response.status_code}")
+
             else:
-                self.logger.warning(f"Failed to download image: {image_url} (status code {response.status_code})")
-                return None
+                self.logger.warning("No image URL found for the article.")
+        
         except Exception as e:
             self.logger.error(f"Error downloading image: {e}")
-            return None
-
-
-
+        
+        return None  # Return None if the image couldn't be downloaded
 
     def cleanup(self):
         self.excel_handler.save()

@@ -16,7 +16,7 @@ def run_task():
         payload = work_items.get_work_item_variables()
         search_phrase = payload.get("search_phrase", "tech")
         sort_category = payload.get("sort_category", "date")
-        num_months = int(payload.get("num_months", 2))
+        num_months = int(payload.get("num_months", 0))
 
         # Log the received variables
         logging.info(f"Search Phrase: {search_phrase}, Sort Category: {sort_category}, Number of Months: {num_months}")
