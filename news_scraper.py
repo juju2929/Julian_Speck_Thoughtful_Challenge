@@ -34,15 +34,6 @@ class CustomSelenium:
         self.selenium_lib = Selenium()
         self.logger = logging.getLogger(__name__)
 
-    def set_chrome_options(self):
-        return [
-            '--no-sandbox',
-            '--disable-extensions',
-            '--disable-gpu',
-            '--disable-web-security',
-            '--start-maximized'
-        ]
-
     def set_webdriver(self):
         self.selenium_lib.open_chrome_browser(url="https://www.aljazeera.com/", headless=False)
 
@@ -115,10 +106,6 @@ class DataProcessor:
                 # Return None for unrecognized formats
                 return None
 
-    @staticmethod
-    def sanitize_filename(url):
-        # Create a valid filename by removing or replacing invalid characters
-        return re.sub(r'[<>:"/\\|?*]', '_', url.split("/")[-1])
 
 class ExcelHandler:
     def __init__(self, output_dir, filename):
@@ -428,7 +415,7 @@ if __name__ == "__main__":
     
     # These parameters should be obtained from Robocloud work item in a real scenario
     search_phrase = "climate"
-    sort_category = "environment"
+    sort_category = "date"
     num_months = 2
 
     bot = NewsBot(search_phrase, sort_category, num_months)
